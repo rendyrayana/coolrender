@@ -1,0 +1,35 @@
+{
+  "defaults": {
+    "resolution": "1080p",
+    "fps": 30,
+    "bg": "dark",
+    "margin": 0.08,
+    "key": 1.35,
+    "rim": 1,
+    "models": [
+      "/sample/teapot.glb"
+    ]
+  },
+  "shots": [
+    {
+      "id": "sample_studio",
+      "style": "studio",
+      "anim": "turntable",
+      "seconds": 6
+    },
+    {
+      "id": "sample_points",
+      "style": "points",
+      "anim": "turntable",
+      "seconds": 6,
+      "loop": true
+    },
+    {
+      "id": "sample_clay_morph",
+      "style": "clay",
+      "styleB": "ps1",
+      "anim": "morph",
+      "seconds": 6
+    }
+  ]
+}
