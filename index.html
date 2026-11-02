@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>coolrender: 3D scans to turntable clips</title>
+  <meta name="description" content="Drop in a 3D scan, pick a style, and export a clean turntable video. Runs in your browser, nothing is uploaded." />
+  <meta name="theme-color" content="#18171e" />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="coolrender: 3D scans to turntable clips" />
+  <meta property="og:description" content="Drop in a 3D scan, pick a style, and export a clean turntable video. Runs in your browser, nothing is uploaded." />
+  <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./styles/app.css" />
+</head>
+<body>
+  <div id="app">
+    <header id="topbar">
+      <div class="topbar-logo">
+        <div class="logo-mark" aria-hidden="true"><span class="lit"></span><span class="lit"></span><span class="lit"></span><span class="lit"></span><span></span><span></span><span class="lit"></span><span class="lit"></span><span class="lit"></span></div>
+        <div class="topbar-wordmark"><h1>coolrender</h1><p>3D scans to clean turntable clips</p></div>
+      </div>
+      <div class="topbar-spacer"></div>
+      <span id="filename-badge"></span>
+    </header>
+
+    <div id="main">
+      <section id="stage-col">
+        <div id="viewport">
+          <div id="frame"><canvas id="canvas" aria-label="Preview of the render"></canvas></div>
+          <div id="empty">
+            <p class="empty-title">Drop a 3D model here</p>
+            <p class="empty-sub">GLB, GLTF, OBJ (with MTL and textures), PLY or STL. Drop up to 4 models for a lineup. Everything stays in your browser.</p>
+            <div class="empty-actions">
+              <button class="btn" id="empty-open" type="button">Choose files…</button>
+              <button class="btn btn-primary" id="empty-sample" type="button">Try the sample</button>
+            </div>
+          </div>
+          <div id="drop-hint">Drop to load</div>
+          <div id="notices" aria-live="polite"></div>
+          <div id="cam-hint" hidden>Camera moved for inspection. Press R to reset. Exports always use the studio camera.</div>
+        </div>
+        <div id="transport">
+          <button class="icon-btn" id="play" type="button" title="Play / pause (Space)" aria-label="Play or pause">
+            <svg id="icon-pause" width="14" height="14" viewBox="0 0 14 14" fill="currentColor"><rect x="3" y="2" width="3" height="10"/><rect x="8" y="2" width="3" height="10"/></svg>
+            <svg id="icon-play" width="14" height="14" viewBox="0 0 14 14" fill="currentColor" hidden><path d="M3 2l9 5-9 5z"/></svg>
+          </button>
+          <input type="range" id="scrub" min="0" max="1000" value="0" aria-label="Time" />
+          <span id="time-label">0.00 / 6.00 s</span>
+          <button class="icon-btn" id="reset-view" type="button" title="Reset camera (R)" aria-label="Reset camera">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2.5 7a4.5 4.5 0 1 0 1.4-3.2M2.5 2v2.6h2.6"/></svg>
+          </button>
+        </div>
+      </section>
+
+      <aside id="sidebar" aria-label="Settings"></aside>
+    </div>
+
+    <footer id="footer">
+      <span class="shortcuts"><kbd>Space</kbd> play/pause · <kbd>R</kbd> reset camera · <kbd>E</kbd> export</span>
+      <a href="https://github.com/rendyrayana/coolrender" target="_blank" rel="noopener">coolrender by Rendy Rayana Herdiana Putra</a>
+    </footer>
+  </div>
+  <input type="file" id="file-input" multiple hidden accept=".glb,.gltf,.obj,.mtl,.ply,.stl,.bin,.png,.jpg,.jpeg,.webp,.csv,.txt,.json" />
+  <input type="file" id="look-input" hidden accept=".json,application/json" />
+  <noscript><p style="padding:24px;font-family:sans-serif">coolrender needs JavaScript to run.</p></noscript>
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>

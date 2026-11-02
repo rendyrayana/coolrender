@@ -1,0 +1,16 @@
+# dependencies and build output
+node_modules/
+dist/
+
+# your own scans, renders and shot lists (large, private, or specific to one project)
+/models/*
+!/models/.gitkeep
+/renders/
+/shots.*.json
+!/shots.json
+
+# local tooling and notes
+.claude/
+.DS_Store
+*.log
+coolrender_plan.md
