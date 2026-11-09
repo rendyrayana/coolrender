@@ -1,25 +1,83 @@
 # coolrender
 
-Render 3D scans as clean turntable video clips, right in your browser. Drop in a model, pick a style, press Export. No install, no account, and nothing is uploaded: everything runs on your computer.
+> From 3D scan to clean turntable video. A browser tool that renders scans as polished clips in 31 styles and exports MP4, WebM with alpha or PNG frames.
 
 ![coolrender demo](docs/demo.gif)
 
-[Watch the full demo as a video](docs/demo.mp4) (52 s: load the sample, try styles and motions, change the look, export an MP4).
+**[Live Preview](https://rendyrayana.github.io/coolrender/)** · [Demo video](docs/demo.mp4) · [Rendy Rayana](https://rendyrayana.my.id)
+
+## Overview
+
+coolrender turns 3D scans and models into clean video clips. It runs entirely in the browser on the user's machine, with no install, no account and no upload: drop in a model, pick a style, press Export. Every frame is rendered at an exact time, one after another, so a slow computer takes longer but never drops a frame. A batch renderer drives the same scene from a shot list, for many clips with one look.
+
+It was built for a PhD defense film on 3D-scanned cultural objects, and for designers, museum staff and researchers who need clear scan visuals without writing code.
 
 ![coolrender app](docs/app.png)
 
-## 30-second quick start
+## Features
 
-1. Open the app: [rendyrayana.github.io/coolrender](https://rendyrayana.github.io/coolrender/). To run it yourself, use `npm install && npm run dev`.
-2. Drag a model onto the stage, or click **Try the sample**.
-3. Pick a look under **Quick start** or browse the **Style** gallery (hover a style for a one-line description).
-4. Press **Export** (or <kbd>E</kbd>). Your video downloads when the progress bar finishes.
+**Import**
+- Drag and drop GLB, GLTF, OBJ (+MTL and textures), PLY and STL, with a bundled sample
+- Orientation helpers (Y-up, Z-up, tip, turn, auto-fit); heavy models offer to simplify to 300k triangles
+- Friendly messages for unsupported files, missing textures and incompatible choices
 
-The defaults give a 6-second, 1080p, 30 fps MP4 with one smooth 360° turn. Your settings are remembered for next time.
+**Style (31, in five tabs)**
+- Basics: studio, clay, point cloud, PS1, wireframe, contour
+- Scanning: photo rig, structured light, depth noise, LiDAR sweep, points to mesh, pixel rain
+- Analysis: deviation map (viridis, shared scale), ghost overlay of rescans, section cut, X-ray, print layers, live decimation, UV unfold, texel steps, filament colours, anchor glow
+- Retro and staging: CRT, halftone, ink, blueprint, tilt-shift, AR card, museum vitrine, mirror floor, low light
 
 ![All 31 styles](docs/styles.jpg)
 
-## Supported formats
+**Motion**
+- Turn (full 360 or a gentle swing from the front), rows of up to four models
+- Explode and reassemble: your own hand-arranged layout, radial, or lift
+- Gather, morph, split compare, dither dissolve, glitch cut
+
+**Look and export**
+- Dark, light or transparent background, ground shadow, key and rim light, camera height, lens and margin
+- 720p, 1080p, 4K or square; 24, 30 or 60 fps; seamless loop
+- MP4 (H.264), WebM with transparency, or a PNG sequence as ZIP
+- Presets, look files, keyboard shortcuts (Space play, R reset, E export)
+
+**Scan tools (command line)**
+- Batch renderer from a shot list: PNG frames, MP4, and ProRes 4444 for transparent shots
+- Rescan alignment (scale and ICP) with per-vertex deviation in millimetres
+- Assembly prep: matches separate parts to a hand-made exploded view
+- Blender clean-up and simplification for large scans
+
+## Requirements
+
+- Node.js 20.19+ (for running it yourself)
+- Modern browser with WebGL2. Chrome or Edge recommended: video export uses WebCodecs (recent Safari works too). PNG export works in any browser
+- Batch mode and scan tools: Playwright's Chromium, and Blender for the optional Python scripts
+
+## Getting Started
+
+```bash
+git clone https://github.com/rendyrayana/coolrender
+cd coolrender
+npm install
+npm run dev
+```
+
+Open `http://localhost:3100`. Drag a model onto the stage, or click **Try the sample**, pick a look under **Quick start** or a style from the gallery, then press **Export**. The defaults give a 6-second, 1080p, 30 fps MP4. Your settings are remembered for next time.
+
+## Tech Stack
+
+| Library / Tool | Role |
+|---|---|
+| [Three.js](https://threejs.org) | 3D rendering, loaders, OrbitControls |
+| [mediabunny](https://github.com/Vanilagy/mediabunny) | MP4 and WebM files with WebCodecs, including alpha |
+| [meshoptimizer](https://github.com/zeux/meshoptimizer) | Mesh simplification |
+| [three-mesh-bvh](https://github.com/gkjohnson/three-mesh-bvh) | Distance queries for deviation maps |
+| [fflate](https://github.com/101arrowz/fflate) | PNG sequence ZIP |
+| [Playwright](https://playwright.dev) and [ffmpeg](https://ffmpeg.org) | Headless batch rendering and encoding |
+| [Vite](https://vitejs.dev) | Dev server and build tooling |
+
+## Usage guide
+
+### Supported formats
 
 | Import | Notes |
 |---|---|
@@ -36,7 +94,7 @@ The defaults give a 6-second, 1080p, 30 fps MP4 with one smooth 360° turn. Your
 
 Video export uses WebCodecs, so use Chrome or Edge (recent Safari works too). PNG export works in any browser. Every frame is rendered at an exact time, one after another, not in real time. A slow computer takes longer, but it never drops a frame.
 
-## The panel
+### The panel
 
 - **Quick start:** built-in looks (Studio dark, Clay light, Point cloud). **Save look** stores all settings in a small `.json` file; **Load look** (or dropping the file on the stage) brings them back.
 - **Model:** the loaded models, plus **Fix orientation** (Y-up, Z-up, tip, turn, auto-fit). Heavy models (over 300k triangles) trigger an offer to simplify.
@@ -51,7 +109,7 @@ The camera is fixed for exports: a little above the object, with a long lens, au
 
 **Friendly messages:** unsupported files, missing textures or material files, and heavy models show a message with what to do, not an error.
 
-## Styles
+### Styles
 
 | Tab | Style | What you see |
 |---|---|---|
@@ -89,7 +147,7 @@ The camera is fixed for exports: a little above the object, with a long lens, au
 
 Most styles change over the length of the shot, and the object keeps turning while they do. Styles that play once (build-ups, reveals) don't loop seamlessly; the panel tells you when Loop is on with one of them.
 
-## Motion
+### Motion
 
 | Motion | What happens |
 |---|---|
@@ -111,7 +169,7 @@ Rows of models take the room their reach needs; **Row width** (Options) makes th
 
 **Deviation and ghost overlay:** `scripts/align_scans.py` aligns rescans to their raw scan (scale and ICP), measures the distance from every rescan vertex to the raw surface in millimetres and stores it in the GLB. **Deviation** colours it on one scale (viridis, fixed range or automatic) with a sweep or ripple pulse; **Ghost overlay** fades the rescans in over the solid raw scan. Their times are under Options. Without stored values, Deviation uses a CSV dropped with the model (one number per vertex, matched by file name; OBJ values follow the `v` lines), the distance to the second model, or shows height and says so.
 
-## Batch mode (command line)
+### Batch mode (command line)
 
 For many shots with the same look, or for rendering without clicking:
 
@@ -141,24 +199,33 @@ For each shot the renderer steps time in fixed 1/fps increments in headless Chro
 
 **Preparing scans.** [scripts/align_scans.py](scripts/align_scans.py) and [scripts/prepare_parts.py](scripts/prepare_parts.py) (see above) prepare rescans and assembly models. [scripts/prepare_scan.py](scripts/prepare_scan.py) uses Blender to join meshes, apply a texture, simplify to a triangle budget, shrink the texture and write a GLB, with optional clean-up (stand a tilted scan upright, trim scanner floor, drop loose fragments). [scripts/obj2glb.mjs](scripts/obj2glb.mjs) converts a textured OBJ without Blender.
 
-## Publishing
+### Publishing
 
 The repo has a GitHub Pages workflow ([.github/workflows/pages.yml](.github/workflows/pages.yml)). In the repository settings, set **Pages → Source** to **GitHub Actions**, then push to `main`. The build uses relative paths, so it works at any URL.
 
-## Adding a style or animation
+### Adding a style or animation
 
 Each style is one file in `src/styles/` that exports `{ id, label, build(model, ctx), render?(stage) }`. Anything it builds can have `userData.update(t, look)`, which runs every frame. `src/core/shaderPatch.js` adds GLSL to normal three.js materials, and `src/styles/cloud.js` builds point clouds. Register the file in `src/styles/index.js` and give it a tab and a tooltip in `src/ui/catalog.js`; the unit tests fail if one is missing. Flags such as `perPart`, `needsMesh` and `usesOtherModels` tell the app when a style cannot work, so it dims the card instead of showing nothing. Run `npm run thumbnails` to render its gallery picture.
 
 Each animation is one file in `src/anims/` that exports `{ id, label, maxModels, layout(items), update(items, t, look) }`; `src/anims/blend.js` makes two-style blends. Register it in `src/anims/index.js`.
 
-## Tests
+### Tests
 
 - `npm run test:unit` checks the pure logic without a browser: look validation and old-name aliases, turn and swing angles, the camera fit and row layout, explode layouts, shot lists, and that the style list, the panel tabs, the tooltips and the thumbnails all agree.
 - `npm test` also drives the app like a user: it opens the sample, clicks every style card and motion chip, exports MP4, a PNG zip and a transparent WebM, and checks the unsupported-file message. Pass extra files to also check the heavy-model and missing-texture messages: `node tests/ui.mjs <out-dir> heavy.obj heavy.jpg other.obj`.
 - `npm run qa` renders every style with every motion, every style on a point cloud and on a transparent background, and fails on any error or empty frame. CI runs the unit tests and this before it deploys.
 
+## Status
+
+Version 1.0. Built for research on communicating 3D scans of cultural objects. Feedback and issues welcome.
+
 ## License
 
-MIT. See [LICENSE](LICENSE). The PS1 shaders come from [lofi-viewer](https://github.com/rendyrayana/lofi-viewer). The sample teapot is a photogrammetry scan by the author.
+[MIT](LICENSE). The PS1 shaders come from [lofi-viewer](https://github.com/rendyrayana/lofi-viewer). The sample teapot is a photogrammetry scan by the author.
 
-coolrender by Rendy Rayana Herdiana Putra
+## Links
+
+- **Live Preview:** [rendyrayana.github.io/coolrender](https://rendyrayana.github.io/coolrender/)
+- **GitHub:** [github.com/rendyrayana/coolrender](https://github.com/rendyrayana/coolrender)
+- **Related:** [lofi-viewer](https://github.com/rendyrayana/lofi-viewer), from 3D scan to retro model and multi-color print
+- **More projects:** [rendyrayana.my.id](https://rendyrayana.my.id)

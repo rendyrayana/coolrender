@@ -1,7 +1,7 @@
 {
   "name": "coolrender",
   "version": "1.0.0",
-  "description": "Render 3D scans as clean turntable video clips, in the browser or from a shot list",
+  "description": "From 3D scan to clean turntable video",
   "license": "MIT",
   "author": "Rendy Rayana Herdiana Putra",
   "private": true,
