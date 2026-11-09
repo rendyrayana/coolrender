@@ -2,7 +2,9 @@
 
 > From 3D scan to clean turntable video. A browser tool that renders scans as polished clips in 31 styles and exports MP4, WebM with alpha or PNG frames.
 
-![coolrender demo](docs/demo.gif)
+
+https://github.com/user-attachments/assets/fee7da98-42c2-437d-90aa-2a2a1421f404
+
 
 **[Live Preview](https://rendyrayana.github.io/coolrender/)** · [Demo video](docs/demo.mp4) · [Rendy Rayana](https://rendyrayana.my.id)
 
