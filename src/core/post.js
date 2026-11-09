@@ -43,3 +43,9 @@ export function passMaterial(fragmentShader, uniforms) {
     toneMapped: false,
   });
 }
+
+// Frees every grabbed frame texture (they are large at 4K). They are recreated when next needed.
+export function releaseGrabs() {
+  for (const tex of grabs.values()) tex.dispose();
+  grabs.clear();
+}

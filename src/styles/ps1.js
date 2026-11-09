@@ -78,10 +78,15 @@ let target = null;
 export default {
   id: 'ps1',
   label: 'PS1',
+  perPart: true,
   build(model) {
     const group = new THREE.Group();
+    group.userData.disposables = [];
     for (const part of model.children) {
-      group.add(part.isPoints ? pointsLike(part, model) : new THREE.Mesh(part.geometry, psxMaterial(part.material)));
+      if (part.isPoints) { group.add(pointsLike(part, model)); continue; }
+      const material = psxMaterial(part.material);
+      if (material.uniforms.map.value) group.userData.disposables.push(material.uniforms.map.value); // the texture copy lives in a uniform
+      group.add(new THREE.Mesh(part.geometry, material));
     }
     return group;
   },

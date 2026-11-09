@@ -8,6 +8,8 @@ const LAYERS = 140;
 export default {
   id: 'print_layers',
   label: 'Print layers',
+  needsMesh: true,
+  perPart: true,
   timed: true, // plays once over the shot, so it can't loop seamlessly
   build(model) {
     const h = model.userData.height;

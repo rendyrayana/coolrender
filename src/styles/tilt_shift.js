@@ -26,6 +26,7 @@ const blur = passMaterial(/* glsl */`
 export default {
   id: 'tilt_shift',
   label: 'Tilt-shift',
+  perPart: true,
   build: model => meshes(model, ownMaterial),
   render(stage) {
     const { renderer } = stage;

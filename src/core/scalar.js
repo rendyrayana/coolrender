@@ -1,15 +1,14 @@
 import * as THREE from 'three';
-import { MeshBVH } from 'three-mesh-bvh';
 
 // One value per vertex, 0..1, stored as attribute `aScalar` on every mesh of
-// the model. Used by heatmap, heat_pulse and anchor_glow. Sources, in order:
-//   1. values loaded from a CSV (the aHeat attribute, see core/heat.js), e.g. Hausdorff distances
-//   2. distance to a reference model (e.g. original scan vs. rescan)
-//   3. the model's vertex colours (brightness)
-//   4. `fallback`: 'dark' = dark areas of the texture (carved marks), 'none' = 0, else height
-export function vertexScalar(model, { reference = null, fallback = 'height' } = {}) {
+// the model. Used by anchor_glow. Sources, in order:
+//   1. values loaded from a CSV (the aHeat attribute, see core/heat.js)
+//   2. the model's vertex colours (brightness)
+//   3. `fallback`: 'dark' = dark areas of the texture (carved marks), 'none' = 0, else height
+// (Distances to a rescan are a different thing: see core/deviation.js.)
+export function vertexScalar(model, { fallback = 'height' } = {}) {
   const cache = (model.userData.cache ??= {});
-  const key = `scalar_${reference?.uuid ?? ''}_${fallback}`;
+  const key = `scalar_${fallback}`;
   const meshes = model.children.filter(c => c.isMesh);
   if (cache[key]) {
     // Another style may have written different values since; put ours back.
@@ -20,7 +19,6 @@ export function vertexScalar(model, { reference = null, fallback = 'height' } = 
   const raw = meshes.map(mesh => {
     const geo = mesh.geometry, n = geo.attributes.position.count;
     if (geo.attributes.aHeat) return Float32Array.from(geo.attributes.aHeat.array);
-    if (reference?.children.some(c => c.isMesh)) return distances(geo, reference);
     const col = geo.attributes.color;
     if (col) return Float32Array.from({ length: n }, (_, i) => 0.3 * col.getX(i) + 0.59 * col.getY(i) + 0.11 * col.getZ(i));
     if (fallback === 'dark' && mesh.material.map && geo.attributes.uv) return textureDarkness(mesh);
@@ -43,19 +41,6 @@ export function vertexScalar(model, { reference = null, fallback = 'height' } = 
     return attribute;
   });
   return (cache[key] = { peak: peak ?? new THREE.Vector3(), attributes }); // peak: where the value is highest
-}
-
-// Nearest distance from each vertex to the reference surface (one-sided Hausdorff).
-function distances(geo, reference) {
-  const refMeshes = reference.children.filter(c => c.isMesh);
-  const bvhs = refMeshes.map(m => new MeshBVH(m.geometry.index ? m.geometry : m.geometry.clone().setIndex([...Array(m.geometry.attributes.position.count).keys()])));
-  const pos = geo.attributes.position, p = new THREE.Vector3(), hit = {};
-  return Float32Array.from({ length: pos.count }, (_, i) => {
-    p.fromBufferAttribute(pos, i);
-    let best = Infinity;
-    for (const bvh of bvhs) { bvh.closestPointToPoint(p, hit); best = Math.min(best, hit.distance); }
-    return best;
-  });
 }
 
 function textureDarkness(mesh) {

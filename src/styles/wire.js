@@ -10,6 +10,7 @@ const MAX_TRIS = 15_000; // denser scans become grey mush as a wireframe
 export default {
   id: 'wire',
   label: 'Wireframe',
+  needsMesh: true,
   build(model) {
     const clay = clayMaterial();
     // Push the surface back a little so the lines don't flicker against it.

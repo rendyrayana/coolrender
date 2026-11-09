@@ -10,6 +10,7 @@ const BLUE = '#1e3a5f';
 export default {
   id: 'blueprint',
   label: 'Blueprint',
+  needsMesh: true,
   extent: 1.45, // props reach beyond the object
   background: BLUE,
   shadow: false,

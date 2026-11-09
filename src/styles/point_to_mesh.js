@@ -7,6 +7,7 @@ import { lowPoly } from '../core/lod.js';
 export default {
   id: 'point_to_mesh',
   label: 'Points to mesh',
+  needsMesh: true,
   timed: true, // plays once over the shot, so it can't loop seamlessly
   build(model) {
     const uFade = { value: 1 };

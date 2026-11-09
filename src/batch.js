@@ -21,9 +21,9 @@ export function startBatch() {
       const models = await loadShotModels(shot, '/models/', m => logs.push(m));
       const look = shotLook(shot);
       const { width, height } = outputSize(look);
-      stage.setLook({ width: undefined, height: undefined, ...look });
-      stage.setModels(models);
+      stage.onWarn = m => logs.push(m);
       stage.setSize(width, height);
+      stage.configure({ models, look: { width: undefined, height: undefined, ...look } });
       return { frames: frameCount(look), fps: look.fps, width, height, logs };
     },
     // Frame i at exactly i / fps seconds, as a PNG data URL.

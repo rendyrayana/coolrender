@@ -7,6 +7,8 @@ import { meshes, progress, smooth, ownMaterial } from './shared.js';
 export default {
   id: 'section_cut',
   label: 'Section cut',
+  needsMesh: true,
+  perPart: true,
   timed: true, // plays once over the shot, so it can't loop seamlessly
   build(model) {
     const r = model.userData.radius;

@@ -9,6 +9,8 @@ const uCell = { value: 8 };
 export default {
   id: 'halftone',
   label: 'Halftone',
+  needsMesh: true,
+  perPart: true,
   background: '#f2efe8',
   shadow: false,
   build(model) {

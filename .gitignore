@@ -1,6 +1,7 @@
 # dependencies and build output
 node_modules/
 dist/
+*.tgz
 
 # your own scans, renders and shot lists (large, private, or specific to one project)
 /models/*
@@ -9,8 +10,36 @@ dist/
 /shots.*.json
 !/shots.json
 
-# local tooling and notes
-.claude/
+# scan sources and Blender working files
+*.blend
+*.blend1
+*.fbx
+*.ply
+*.stl
+*.obj
+*.mtl
+!/public/sample/**
+
+# secrets and local settings
+.env
+.env.*
+*.pem
+*.key
+
+# editors, OS, logs, temp
+.vscode/
+.idea/
 .DS_Store
+Thumbs.db
 *.log
+*.tmp
+.cache/
+.playwright/
+test-results/
+playwright-report/
+
+# local tooling and personal notes
+.claude/
 coolrender_plan.md
+docs/audit/
+docs/github-about.md

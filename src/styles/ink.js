@@ -7,6 +7,8 @@ import { patchMaterial } from '../core/shaderPatch.js';
 export default {
   id: 'ink',
   label: 'Ink',
+  needsMesh: true,
+  perPart: true,
   background: '#f4f1ea',
   shadow: false,
   build(model) {

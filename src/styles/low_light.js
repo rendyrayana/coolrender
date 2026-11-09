@@ -6,6 +6,8 @@ import { patchMaterial } from '../core/shaderPatch.js';
 export default {
   id: 'low_light',
   label: 'Low light',
+  needsMesh: true,
+  perPart: true,
   shadow: false,
   build(model) {
     const uAngle = { value: 0 };

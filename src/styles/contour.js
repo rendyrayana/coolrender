@@ -5,6 +5,8 @@ import { patchMaterial } from '../core/shaderPatch.js';
 export default {
   id: 'contour',
   label: 'Contour',
+  needsMesh: true,
+  perPart: true,
   build(model) {
     const uSpacing = { value: model.userData.height / 36 }, uPhase = { value: 0 };
     const material = patchMaterial(clayMaterial(), {

@@ -9,6 +9,8 @@ import { BACKGROUNDS } from '../core/look.js';
 export default {
   id: 'stripes',
   label: 'Structured light',
+  needsMesh: true,
+  perPart: true,
   timed: true, // plays once over the shot, so it can't loop seamlessly
   build(model, ctx) {
     const r = model.userData.radius;

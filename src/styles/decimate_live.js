@@ -8,6 +8,7 @@ import { lowPoly } from '../core/lod.js';
 export default {
   id: 'decimate_live',
   label: 'Live decimation',
+  needsMesh: true,
   timed: true, // plays once over the shot, so it can't loop seamlessly
   build(model) {
     const full = countTriangles(model);

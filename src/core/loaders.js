@@ -72,10 +72,10 @@ export async function loadModelUrl(url) {
   return parseModel(name, data, resolve, readText);
 }
 
-// Shared by both paths. Returns { object, warnings, isPointCloud }.
+// Shared by both paths. Returns { object, warnings (problems), infos (things done for the user), isPointCloud }.
 async function parseModel(name, data, resolveUrl, readText) {
   const ext = extOf(name);
-  const warnings = [];
+  const warnings = [], infos = [];
   const missing = new Set();
 
   // Every texture/buffer request goes through this manager, so we can report
@@ -109,14 +109,18 @@ async function parseModel(name, data, resolveUrl, readText) {
           warnings.push(`The material file "${mtlName}" is missing, so the model has no texture. Drop it together with the .obj and its images, or use the Clay style.`);
         }
       }
+      // Loose edges (`l` lines) turn the whole file into line segments in three.js; only faces matter here.
+      data = data.replace(/^l\s.*$/gm, '');
       object = loader.parse(data);
       sourcePositions = objPositions(data);
     } else if (ext === 'ply') {
-      const geo = new PLYLoader().parse(data);
+      const geo = new PLYLoader().parse(data).rotateX(-Math.PI / 2); // scanner and CAD files are Z-up
       isPointCloud = !geo.index;
       object = wrapGeometry(geo, isPointCloud);
+      infos.push('PLY files are usually Z-up, so the model was stood up. If it looks wrong, use the Y-up button.');
     } else if (ext === 'stl') {
-      object = wrapGeometry(new STLLoader().parse(data), false);
+      object = wrapGeometry(new STLLoader().parse(data).rotateX(-Math.PI / 2), false); // CAD and scanner files are Z-up
+      infos.push('STL files are usually Z-up, so the model was stood up. If it looks wrong, use the Y-up button.');
     } else {
       throw new FriendlyError(`".${ext}" files are not supported. Use GLB, GLTF, OBJ, PLY or STL.`);
     }
@@ -140,7 +144,7 @@ async function parseModel(name, data, resolveUrl, readText) {
   });
   if (missing.size) warnings.push(`Missing texture: ${[...missing].join(', ')}. The model is shown without it. Drop the image together with the model to fix this.`);
 
-  return { object, warnings, isPointCloud, sourcePositions };
+  return { object, warnings, infos, isPointCloud, sourcePositions };
 }
 
 function wrapGeometry(geo, asPoints) {

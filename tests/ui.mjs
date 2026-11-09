@@ -25,6 +25,32 @@ try {
   console.log(`export: ${file} in ${((Date.now() - t0) / 1000).toFixed(1)} s`);
   console.log(`notice: ${await notices()}`);
 
+  // Every style card and motion chip applies (or is dimmed with a reason), with no errors.
+  const ids = await page.locator('.card').evaluateAll(els => els.map(e => e.dataset.id));
+  for (const id of ids) {
+    const card = page.locator(`.card[data-id="${id}"]`);
+    if (await card.isDisabled()) continue;
+    await page.click('.tabs button >> nth=' + (await page.evaluate(i => [...document.querySelectorAll('.cards')].findIndex(g => g.querySelector(`[data-id="${i}"]`)), id)));
+    await card.click();
+    const style = await page.evaluate(() => window.__coolrender.stage.look.style);
+    if (style !== id) throw new Error(`style card ${id} did not apply (got ${style})`);
+  }
+  console.log(`styles: ${ids.length} cards clicked`);
+  await page.click('.tabs button >> nth=0');
+  await page.click('.card[data-id="studio"]');
+  for (const id of await page.locator('.chip[data-value]').evaluateAll(els => els.map(e => e.dataset.value))) {
+    if (await page.locator(`.chip[data-value="${id}"]`).isDisabled()) { console.log(`motion ${id}: dimmed with one model`); continue; }
+    await page.click(`.chip[data-value="${id}"]`);
+  }
+  // Explode works with one model and shows its options; a point cloud style is dimmed for it.
+  await page.click('.chip[data-value="explode"]');
+  if (!(await page.locator('.panel-flush').isVisible())) throw new Error('motion options are not shown for Explode');
+  await page.click('.chip[data-value="turn"]');
+  // Settings from the shot list must not be saved to the browser.
+  const saved = await page.evaluate(() => localStorage.getItem('coolrender.settings.v2') ?? '');
+  if (saved.includes('motionEvents') && !saved.includes('"motionEvents":[]')) throw new Error('shot-only settings were saved');
+  console.log('motions and options ok');
+
   // PNG sequence and transparent WebM, 1 second each.
   await page.fill('#seconds', '1');
   await page.press('#seconds', 'Enter');

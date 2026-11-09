@@ -2,6 +2,10 @@
 
 Render 3D scans as clean turntable video clips, right in your browser. Drop in a model, pick a style, press Export. No install, no account, and nothing is uploaded: everything runs on your computer.
 
+![coolrender demo](docs/demo.gif)
+
+[Watch the full demo as a video](docs/demo.mp4) (52 s: load the sample, try styles and motions, change the look, export an MP4).
+
 ![coolrender app](docs/app.png)
 
 ## 30-second quick start
@@ -13,7 +17,7 @@ Render 3D scans as clean turntable video clips, right in your browser. Drop in a
 
 The defaults give a 6-second, 1080p, 30 fps MP4 with one smooth 360° turn. Your settings are remembered for next time.
 
-![All 35 styles](docs/styles.jpg)
+![All 31 styles](docs/styles.jpg)
 
 ## Supported formats
 
@@ -37,7 +41,7 @@ Video export uses WebCodecs, so use Chrome or Edge (recent Safari works too). PN
 - **Quick start:** built-in looks (Studio dark, Clay light, Point cloud). **Save look** stores all settings in a small `.json` file; **Load look** (or dropping the file on the stage) brings them back.
 - **Model:** the loaded models, plus **Fix orientation** (Y-up, Z-up, tip, turn, auto-fit). Heavy models (over 300k triangles) trigger an offer to simplify.
 - **Style:** the gallery, in tabs: Basics, Scanning, Analysis, Retro, Staging.
-- **Motion:** how it moves: a turntable, a lineup, styles blending into each other, or parts assembling.
+- **Motion:** how it moves: a turn or swing, styles blending into each other, or parts exploding and reassembling. **Options** appear below it for the chosen motion and style.
 - **Look:** background (dark `#111111`, light `#F5F5F5`, transparent), ground shadow, and under **Lighting & camera** the key and rim light, camera height, lens and frame margin. Point styles get **Point options** (count, size, brightness, drift).
 - **Output:** duration, resolution (720p, 1080p, 4K, square), FPS (24, 30, 60), **Loop** (constant speed, so the clip repeats seamlessly) and format.
 
@@ -54,9 +58,8 @@ The camera is fixed for exports: a little above the object, with a long lens, au
 | Basics | Studio (`studio`) | Textured, as scanned |
 |  | Clay (`clay`) | Light-grey and untextured: pure shape |
 |  | Point cloud (`points`) | Round points sampled from the surface, in the scan’s colours |
-|  | PS1 (`ps1`) | PS1 look: vertex snapping, affine textures, 15-bit colour |
+|  | PS1 (`ps1`) | PS1 look: vertex snapping, affine textures, 15-bit colour at a low internal resolution |
 |  | Wireframe (`wire`) | Clay with a thin wireframe on top |
-|  | Heatmap (`heatmap`) | Grey-to-slate ramp of per-vertex values. Drop a CSV with the model, or load two models to compare them |
 |  | Contour (`contour`) | Topographic slice lines over clay |
 | Scanning | Photo rig (`photo_rig`) | Cameras flash around the object, then the mesh appears |
 |  | Structured light (`stripes`) | Structured-light stripes sweep across and build the scan |
@@ -64,8 +67,8 @@ The camera is fixed for exports: a little above the object, with a long lens, au
 |  | LiDAR sweep (`lidar_sweep`) | A scan line circles the object and leaves points behind |
 |  | Points to mesh (`point_to_mesh`) | Points connect into triangles, then fill into a surface |
 |  | Pixel rain (`pixel_rain`) | Texture pixels fall from above and settle onto the surface |
-| Analysis | Heat pulse (`heat_pulse`) | Heatmap with pulses spreading from the largest difference |
-|  | Ghost diff (`ghost_diff`) | The original with a shimmering ghost of the second model |
+| Analysis | Deviation (`deviation`) | Distance to the raw scan on one colour scale (viridis), with a pulse. Uses stored values, a CSV dropped with the model, or a second model |
+|  | Ghost overlay (`ghost_overlay`) | The raw scan solid, with rescans fading in as translucent ghosts so drift becomes visible |
 |  | Anchor glow (`anchor_glow`) | Clay with carved marks and anchor areas softly glowing |
 |  | Section cut (`section_cut`) | A plane slices in and shows a cross-section |
 |  | X-ray (`xray`) | Translucent glowing shell |
@@ -74,10 +77,7 @@ The camera is fixed for exports: a little above the object, with a long lens, au
 |  | UV unfold (`uv_unfold`) | Flattens into its UV atlas and folds back |
 |  | Texel steps (`texel_step`) | Texture resolution steps 32 → 256 px |
 |  | Filament colours (`filament_snap`) | Colours snap to 8 filament swatches |
-|  | Palette cycle (`palette_cycle`) | 16-colour palette cycling (CLUT) |
-| Retro | PS1 jitter (`vertex_jitter`) | PS1 with strong vertex wobble that settles |
-|  | PS1 on CRT (`crt`) | PS1 on a CRT: scanlines, curvature, glow |
-|  | ASCII (`ascii`) | Drawn in characters |
+| Retro | PS1 on CRT (`crt`) | PS1 on a CRT: scanlines, curvature, glow |
 |  | Halftone (`halftone`) | One-colour print dots on paper |
 |  | Ink (`ink`) | Black outlines on paper white |
 |  | Blueprint (`blueprint`) | White lines on blue, with grid and dimension ticks |
@@ -93,22 +93,23 @@ Most styles change over the length of the shot, and the object keeps turning whi
 
 | Motion | What happens |
 |---|---|
-| Turntable | One model, one 360° turn (ease-in-out, or constant with Loop) |
-| Lineup | 2–4 models side by side, turning in sync |
+| Turn | One model, or up to four side by side, turning in sync. **Full turn** (one 360 degree turn, ease in and out, or constant speed with Loop) or **Swing** (a gentle swing each way from the front view, 40 degrees by default, so the front stays in sight). |
 | Gather | Scattered points converge into the object, then drift (always the point cloud style) |
-| Morph | Crossfade from Style to Second style (e.g. studio → PS1) |
+| Morph | Crossfade from Style to Second style (e.g. studio to PS1) |
 | Split | A divider sweeps across: Style on the left, Second style on the right |
-| Dissolve | Transition from Style to Second style through a 4×4 dither |
+| Dissolve | Transition from Style to Second style through a 4x4 dither |
 | Glitch | RGB-split block glitch as the cut from Style to Second style |
-| Explode | Parts fly in from apart, assemble, hold, then the object turns |
-| Orbit | Parts hover apart, spinning around their own centres, then assemble |
-| Assembly | Parts arrive one by one, bottom first, then the object turns |
+| Explode | Parts move out to an exploded view and back, with a small stagger. **Layout** uses your own hand-arranged exploded view, **Radial** goes straight away from the centre, **Lift** raises the parts like a stack. |
 
-**Two models:** the blend motions show a second loaded model as the second layer (a scan vs. its PS1 version, say). Heatmap, heat pulse and ghost diff measure the distance to the other loaded model (original vs. rescan).
+Rows of models take the room their reach needs; **Row width** (Options) makes the row fill a share of the frame width. Choices that cannot work are dimmed in the panel, with the reason on hover: for example a style that needs a mesh on a point cloud, or Explode with a style that does not draw separate parts.
 
-**Parts:** explode, orbit and assembly use a model's separate meshes as parts, so export your segmented model with one mesh per part. A single scan is split into its loose pieces, or into 8 blocks if it is one piece.
+**Two models:** the blend motions show a second loaded model as the second layer (a scan vs. its PS1 version, say). **Ghost overlay** shows the first model solid and the next ones as ghosts, and **Deviation** can measure the first model against the second (switch on "Measure against the second model"); both bring the two into one frame first.
 
-**Heat values:** drop a `.csv` or `.txt` with one number per vertex (e.g. Hausdorff distances) together with the model; it is matched by file name. For OBJ files the values follow the `v` lines of the file. Without values, the heat styles use the distance to the other loaded model, the model's vertex colours, or height.
+**Parts:** Explode uses a model's separate meshes as parts, so export your segmented model with one mesh per part. A single scan is split into its loose pieces, or into 8 blocks.
+
+**Explode with your own layout:** if you have the same model twice, once assembled with every part as a separate mesh and once hand-arranged into an exploded view, `scripts/prepare_parts.py` matches the parts (by name, vertex count and size), measures where each one went, simplifies per part and writes `<name>.glb` plus `<name>.layout.json`. Load both files together (or drop the layout file later onto the loaded model) and the parts move to exactly your layout. In a shot list use `"layout": "<name>.layout.json"`. The explode and reassemble times are under Options; by default they are 15%, 40%, 60% and 85% of the shot.
+
+**Deviation and ghost overlay:** `scripts/align_scans.py` aligns rescans to their raw scan (scale and ICP), measures the distance from every rescan vertex to the raw surface in millimetres and stores it in the GLB. **Deviation** colours it on one scale (viridis, fixed range or automatic) with a sweep or ripple pulse; **Ghost overlay** fades the rescans in over the solid raw scan. Their times are under Options. Without stored values, Deviation uses a CSV dropped with the model (one number per vertex, matched by file name; OBJ values follow the `v` lines), the distance to the second model, or shows height and says so.
 
 ## Batch mode (command line)
 
@@ -126,19 +127,19 @@ npm run render -- shots.json
 {
   "defaults": { "resolution": "1080p", "fps": 30, "bg": "dark", "rim": 1, "models": ["/sample/teapot.glb"] },
   "shots": [
-    { "id": "sample_studio", "style": "studio", "anim": "turntable", "seconds": 6 },
+    { "id": "sample_studio", "style": "studio", "anim": "turn", "seconds": 6 },
     { "id": "sample_morph", "style": "clay", "styleB": "ps1", "anim": "morph", "seconds": 6 }
   ]
 }
 ```
 
-A shot can set `models`, `style`, `styleB`, `anim`, `seconds`, `bg`, `loop`, `fps`, `resolution`, `width`/`height`, `shadow`, `sameSize`, `fillWidth` (lineup: share of the frame width to fill), `key`, `rim`, `elevation`, `fov`, `margin`, `drift`, `pointCount`, `pointSize`, `pointBright`, `up: "z"`, `tip` and `rotate` (degrees about x and y; a list gives one value per model) and `heat` (a CSV in `models/`). [examples/film.json](examples/film.json) sketches a longer film; replace its model names with your files.
+A shot can set `models`, `style`, `styleB`, `anim`, `seconds`, `bg`, `loop`, `fps`, `resolution`, `width`/`height`, `shadow`, `sameSize`, `fillWidth` (lineup: share of the frame width to fill), `key`, `rim`, `turnMode`, `swing`, `explodeMode`, `motionEvents`, `styleEvents`, `heatMin`, `heatMax`, `heatScale`, `heatPulse`, `heatReference`, `layout`, `elevation`, `fov`, `margin`, `drift`, `pointCount`, `pointSize`, `pointBright`, `up: "z"`, `tip` and `rotate` (degrees about x and y; a list gives one value per model) and `heat` (a CSV in `models/`). Older names (`turntable`, `lineup`, `swing`, `swing_row`, `explode_layout`, `hand_assembly`, `heatmap`, `ghost_diff` and others) still work and are mapped to the current ones. [examples/film.json](examples/film.json) sketches a longer film; replace its model names with your files.
 
 For each shot the renderer steps time in fixed 1/fps increments in headless Chromium, writes `renders/<id>/0001.png …`, encodes `renders/<id>.mp4` (H.264, yuv420p, CRF 16) with the bundled ffmpeg (plus a ProRes 4444 `.mov` with alpha for transparent shots), and prints the render time. Models above 300k triangles are simplified automatically. To render only some shots, add their ids: `npm run render -- shots.json sample_studio`.
 
 `npm run dev` also shows a **Shot list** dropdown with your `shots.json`, to check framing before rendering.
 
-**Preparing big scans.** [scripts/prepare_scan.py](scripts/prepare_scan.py) uses Blender to join meshes, apply a texture, simplify to a triangle budget, shrink the texture and write a GLB, with optional clean-up (stand a tilted scan upright, trim scanner floor, drop loose fragments). [scripts/obj2glb.mjs](scripts/obj2glb.mjs) converts a textured OBJ without Blender.
+**Preparing scans.** [scripts/align_scans.py](scripts/align_scans.py) and [scripts/prepare_parts.py](scripts/prepare_parts.py) (see above) prepare rescans and assembly models. [scripts/prepare_scan.py](scripts/prepare_scan.py) uses Blender to join meshes, apply a texture, simplify to a triangle budget, shrink the texture and write a GLB, with optional clean-up (stand a tilted scan upright, trim scanner floor, drop loose fragments). [scripts/obj2glb.mjs](scripts/obj2glb.mjs) converts a textured OBJ without Blender.
 
 ## Publishing
 
@@ -146,13 +147,15 @@ The repo has a GitHub Pages workflow ([.github/workflows/pages.yml](.github/work
 
 ## Adding a style or animation
 
-Each style is one file in `src/styles/` that exports `{ id, label, build(model, ctx), render?(stage) }`. Anything it builds can have `userData.update(t, look)`, which runs every frame. `src/core/shaderPatch.js` adds GLSL to normal three.js materials, and `src/styles/cloud.js` builds point clouds. Register the file in `src/styles/index.js` and give it a tab and a tooltip in `src/ui/catalog.js`. Run `npm run thumbnails` to render its gallery picture.
+Each style is one file in `src/styles/` that exports `{ id, label, build(model, ctx), render?(stage) }`. Anything it builds can have `userData.update(t, look)`, which runs every frame. `src/core/shaderPatch.js` adds GLSL to normal three.js materials, and `src/styles/cloud.js` builds point clouds. Register the file in `src/styles/index.js` and give it a tab and a tooltip in `src/ui/catalog.js`; the unit tests fail if one is missing. Flags such as `perPart`, `needsMesh` and `usesOtherModels` tell the app when a style cannot work, so it dims the card instead of showing nothing. Run `npm run thumbnails` to render its gallery picture.
 
 Each animation is one file in `src/anims/` that exports `{ id, label, maxModels, layout(items), update(items, t, look) }`; `src/anims/blend.js` makes two-style blends. Register it in `src/anims/index.js`.
 
 ## Tests
 
-`npm test` drives the app like a user: it opens the sample, picks Point cloud, exports MP4, a PNG zip and a transparent WebM, and checks the unsupported-file message. Pass extra files to also check the heavy-model and missing-texture messages: `node tests/ui.mjs <out-dir> heavy.obj heavy.jpg other.obj`.
+- `npm run test:unit` checks the pure logic without a browser: look validation and old-name aliases, turn and swing angles, the camera fit and row layout, explode layouts, shot lists, and that the style list, the panel tabs, the tooltips and the thumbnails all agree.
+- `npm test` also drives the app like a user: it opens the sample, clicks every style card and motion chip, exports MP4, a PNG zip and a transparent WebM, and checks the unsupported-file message. Pass extra files to also check the heavy-model and missing-texture messages: `node tests/ui.mjs <out-dir> heavy.obj heavy.jpg other.obj`.
+- `npm run qa` renders every style with every motion, every style on a point cloud and on a transparent background, and fails on any error or empty frame. CI runs the unit tests and this before it deploys.
 
 ## License
 

@@ -18,7 +18,7 @@ export function prepareModel(loaded, name) {
     // A mirroring transform (scale -1) turns faces inside out; flip them back.
     if (o.matrixWorld.determinant() < 0) flipWinding(geo);
     if (!geo.attributes.normal) geo.computeVertexNormals();
-    for (const part of splitByMaterial(geo, o.material)) root.add(part);
+    for (const part of splitByMaterial(geo, o.material)) { part.name = o.name; root.add(part); } // names link parts to explode layouts
   });
   if (!root.children.length) throw new Error('This file contains no visible geometry.');
   root.userData.isPointCloud = root.children.every(c => c.isPoints);
@@ -129,4 +129,24 @@ export function recenter(root) {
   root.userData.cache = {}; // derived data (points, parts, scalars) is stale now
   root.userData.height = box.max.y - box.min.y || 1;
   root.userData.radius = radius || 1;
+}
+
+// Frees the GPU buffers and textures of a model that is no longer shown, with the
+// geometry and values derived from it (parts, simplified copies, point samples).
+export function disposeModel(model) {
+  const seen = new Set();
+  const free = thing => { if (thing && !seen.has(thing)) { seen.add(thing); thing.dispose?.(); } };
+  model.traverse(o => {
+    free(o.geometry);
+    for (const m of [o.material].flat().filter(Boolean)) {
+      for (const v of Object.values(m)) if (v?.isTexture) free(v);
+      free(m);
+    }
+  });
+  const cache = model.userData.cache ?? {};
+  for (const value of Object.values(cache)) {
+    const list = Array.isArray(value) ? value : value?.children ?? [value];
+    for (const part of list) free(part?.geometry ?? (part?.isBufferGeometry ? part : null));
+  }
+  model.userData.cache = {};
 }

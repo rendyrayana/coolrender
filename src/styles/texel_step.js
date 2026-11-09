@@ -8,13 +8,16 @@ const STEPS = [32, 64, 128, 256];
 export default {
   id: 'texel_step',
   label: 'Texel steps',
+  needsMesh: true,
+  perPart: true,
   timed: true, // plays once over the shot, so it can't loop seamlessly
   build(model) {
-    const updaters = [];
+    const updaters = [], disposables = [];
     const group = meshes(model, part => {
       const material = ownMaterial(part);
       if (!material.map?.image) return material;
       const levels = STEPS.map(size => downsample(material.map, size));
+      disposables.push(...levels);
       const uRes = { value: STEPS[0] };
       material.map = levels[0];
       patchMaterial(material, {
@@ -35,6 +38,7 @@ export default {
       return material;
     });
     group.userData.update = (t, look) => updaters.forEach(u => u(t, look));
+    group.userData.disposables = disposables;
     return group;
   },
 };

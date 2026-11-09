@@ -8,6 +8,7 @@ import { lowPoly } from '../core/lod.js';
 export default {
   id: 'depth_noise',
   label: 'Depth noise',
+  needsMesh: true,
   timed: true, // plays once over the shot, so it can't loop seamlessly
   build(model) {
     const h = model.userData.height;

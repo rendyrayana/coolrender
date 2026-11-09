@@ -14,13 +14,13 @@
     {
       "id": "sample_studio",
       "style": "studio",
-      "anim": "turntable",
+      "anim": "turn",
       "seconds": 6
     },
     {
       "id": "sample_points",
       "style": "points",
-      "anim": "turntable",
+      "anim": "turn",
       "seconds": 6,
       "loop": true
     },

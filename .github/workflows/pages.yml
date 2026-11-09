@@ -1,17 +1,34 @@
-name: Deploy to GitHub Pages
+name: Check and deploy to GitHub Pages
 on:
   push: { branches: [main] }
+  pull_request:
   workflow_dispatch:
 permissions: { contents: read, pages: write, id-token: write }
+
 jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:unit
+      # Renders every style with every motion on the sample, a point cloud and a transparent
+      # background; fails on any error or empty frame. (Video encoding is checked locally with npm test.)
+      - run: npm run qa
+
   deploy:
+    needs: check
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     environment: { name: github-pages, url: "${{ steps.deployment.outputs.page_url }}" }
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: npm }
-      # The build needs no postinstall downloads (ffmpeg, browsers); those are for batch rendering.
+      # The build needs no postinstall downloads (ffmpeg, browsers).
       - run: npm ci --ignore-scripts
       - run: npm run build
       - uses: actions/upload-pages-artifact@v3

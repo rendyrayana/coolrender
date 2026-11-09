@@ -1,10 +1,11 @@
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { createStage } from './core/stage.js';
 import { groupFiles, loadModelFile, loadModelUrl, FriendlyError } from './core/loaders.js';
-import { prepareModel, countTriangles, decimateModel, rotateModel, setZUp, setYUp, recenter, TRI_BUDGET } from './core/model.js';
-import { DEFAULT_LOOK, BUILTIN_PRESETS, cleanLook, outputSize, lookToFile, lookFromFile } from './core/look.js';
+import { prepareModel, countTriangles, decimateModel, rotateModel, setZUp, setYUp, recenter, disposeModel, TRI_BUDGET } from './core/model.js';
+import { DEFAULT_LOOK, BUILTIN_PRESETS, advancedDefaults, cleanLook, outputSize, lookToFile, lookFromFile } from './core/look.js';
 import { parseShotList, shotLook, loadShotModels } from './core/shots.js';
 import { attachHeat } from './core/heat.js';
+import { attachLayout } from './core/layout.js';
 import { lodReady } from './core/lod.js';
 import { ANIMS } from './anims/index.js';
 import { exportVideo } from './export/video.js';
@@ -12,7 +13,8 @@ import { exportPngZip } from './export/pngZip.js';
 import { createSidebar } from './ui/sidebar.js';
 import { startBatch } from './batch.js';
 
-const STORE_KEY = 'coolrender.settings.v1';
+// v2: v1 also held settings that only shot lists could set, which then leaked into later visits.
+const STORE_KEY = 'coolrender.settings.v2';
 
 function startApp() {
   const $ = id => document.getElementById(id);
@@ -31,6 +33,7 @@ function startApp() {
   // Settings are remembered between visits; a broken or old entry is ignored.
   const saved = (() => { try { return JSON.parse(localStorage.getItem(STORE_KEY)); } catch { return null; } })();
   stage.setLook({ ...DEFAULT_LOOK, ...cleanLook(saved?.look) });
+  stage.onWarn = message => notify('warn', message);
   const saveSettings = () => {
     try {
       const { width, height, ...look } = stage.look; // custom sizes come from shots and are not kept
@@ -43,8 +46,9 @@ function startApp() {
   controls.enableDamping = true;
   controls.enablePan = false;
   let cameraMoved = false;
-  controls.addEventListener('start', () => { cameraMoved = true; $('cam-hint').hidden = false; });
+  controls.addEventListener('start', () => { cameraMoved = true; stage.holdCamera = true; $('cam-hint').hidden = false; });
   function resetCamera() {
+    stage.holdCamera = false;
     stage.resetCamera();
     controls.target.copy(stage.target);
     controls.update();
@@ -86,7 +90,7 @@ function startApp() {
   // ── Settings panel ──────────────────────────────────────────────────────────
   const sidebar = createSidebar($('sidebar'), {
     look: changes => setLook(changes),
-    preset: name => setLook({ ...BUILTIN_PRESETS[name] }),
+    preset: name => setLook({ ...advancedDefaults(), ...BUILTIN_PRESETS[name] }),
     format: saveSettings,
     saveLook: () => download(new Blob([lookToFile(stage.look)], { type: 'application/json' }), 'look.json'),
     loadLook: () => { $('look-input').value = ''; $('look-input').click(); },
@@ -106,7 +110,8 @@ function startApp() {
   });
   if (saved?.format) sidebar.format = saved.format;
 
-  function setLook(changes) {
+  // persist: false for looks that come from a shot list, which are not the user's own settings.
+  function setLook(changes, { persist = true } = {}) {
     if (exporting) return; // the export reads the look frame by frame
     // Custom sizes from a shot only apply until a resolution is picked again.
     const clear = changes.resolution ? { width: undefined, height: undefined } : {};
@@ -114,7 +119,7 @@ function startApp() {
     if (!cameraMoved) resetCamera();
     layoutFrame();
     syncUi();
-    saveSettings();
+    if (persist) saveSettings();
   }
 
   function syncUi() {
@@ -122,10 +127,11 @@ function startApp() {
     const shown = stage.visibleModels();
     const max = ANIMS[look.anim].maxModels;
     sidebar.sync({
-      look, canVideo, exporting: !!exporting,
+      look, canVideo, exporting: !!exporting, shownCount: shown.length,
+      hasLayout: stage.models.some(m => m.userData.layoutFile),
       models: stage.models.map(m => ({
-        name: m.name, tris: countTriangles(m), hidden: !shown.includes(m),
-        hiddenReason: max === 1 ? 'Hidden: this animation shows one model. Pick Lineup to show all.' : `Hidden: this animation shows up to ${max} models.`,
+        name: m.name, tris: countTriangles(m), hidden: !shown.includes(m), isPointCloud: !!m.userData.isPointCloud,
+        hiddenReason: max === 1 ? 'Hidden: this motion shows one model.' : `Hidden: this motion shows up to ${max} models, or the style uses this model on its own as a comparison.`,
       })),
     });
     $('filename-badge').textContent = stage.models.map(m => m.name).join(', ');
@@ -137,10 +143,10 @@ function startApp() {
   // ── Models ──────────────────────────────────────────────────────────────────
   function setModels(models) {
     if (exporting) return;
+    const old = stage.models;
     stage.setModels(models);
-    if (models.length > 1 && stage.look.anim === 'turntable') stage.setLook({ anim: 'lineup' });
-    if (models.length < 2 && stage.look.anim === 'lineup') stage.setLook({ anim: 'turntable' });
-    if (models.length > 4) notify('warn', `${models.length} models loaded. Lineup shows the first 4; remove some to choose which.`);
+    old.filter(m => !models.includes(m)).forEach(disposeModel); // free what is no longer shown
+    if (models.length > 4) notify('warn', `${models.length} models loaded. A row shows the first 4; remove some to choose which.`);
     stage.setTime(0);
     resetCamera();
     syncUi();
@@ -150,11 +156,18 @@ function startApp() {
     if (exporting) { notify('warn', 'Wait for the export to finish, or cancel it, before loading files.'); return; }
     const files = [...fileList];
     clearNotices();
-    const looks = files.filter(f => f.name.toLowerCase().endsWith('.json'));
-    for (const f of looks) await loadLookFile(f);
-    const { models, extras, unsupported } = groupFiles(files.filter(f => !looks.includes(f)));
+    // .json files are look files, or explode layouts that belong to a model dropped with them.
+    const jsons = files.filter(f => f.name.toLowerCase().endsWith('.json'));
+    const layouts = [], looks = [];
+    for (const f of jsons) {
+      try { const data = JSON.parse(await f.text()); (data.coolrender === 'explode-layout' ? layouts : looks).push({ file: f, data }); } catch { looks.push({ file: f }); }
+    }
+    for (const { file } of looks) await loadLookFile(file);
+    const { models, extras, unsupported } = groupFiles(files.filter(f => !jsons.includes(f)));
     if (unsupported.length) notify('error', `Can't open ${unsupported.join(', ')}. Supported: GLB, GLTF, OBJ (+MTL and textures), PLY, STL.`);
     if (!models.length) {
+      // A layout file dropped alone belongs to a model that is already loaded.
+      if (layouts.length) { for (const m of stage.models) useLayout(m, layouts, stage.models.length); setLook({ anim: 'explode' }); stage.setTime(0); return; }
       if (extras.size && !unsupported.length) notify('warn', 'These look like texture or material files. Drop them together with the model file (.obj, .gltf).');
       return;
     }
@@ -163,8 +176,10 @@ function startApp() {
       try {
         const result = await loadModelFile(file, extras, { useLoneImage: models.length === 1 });
         result.warnings.forEach(w => notify('warn', `${file.name}: ${w}`, [['Use Clay style', () => setLook({ style: 'clay' })]]));
+        result.infos.forEach(m => notify('ok', `${file.name}: ${m}`));
         const model = prepareModel(result, file.name);
         await loadHeat(model, extras, models.length);
+        useLayout(model, layouts, models.length);
         loaded.push(model);
       } catch (e) {
         notify('error', e instanceof FriendlyError ? e.message : `Couldn't open ${file.name}: ${e.message}`);
@@ -175,7 +190,18 @@ function startApp() {
     for (const m of loaded) checkHeavy(m);
   }
 
-  // Per-vertex values for the heatmap styles: a CSV/TXT with the model's name,
+  // A layout file matches a model by file name (barong.glb and barong.layout.json), or the only model.
+  function useLayout(model, layouts, modelCount) {
+    const base = model.name.replace(/\.[^.]+$/, '').toLowerCase();
+    const layout = layouts.find(l => l.file.name.toLowerCase() === `${base}.layout.json`) ?? (layouts.length === 1 && modelCount === 1 ? layouts[0] : null);
+    if (!layout) return;
+    const { matched, total } = attachLayout(model, layout.data);
+    if (matched < total) notify('warn', `${layout.file.name} matches ${matched} of ${total} parts of ${model.name}. The others stay in place.`);
+    else notify('ok', `Explode layout loaded for ${model.name}. Pick the Explode motion.`);
+    stage.refresh();
+  }
+
+  // Per-vertex values for the Deviation style: a CSV/TXT with the model's name,
   // or the only CSV dropped with a single model.
   async function loadHeat(model, extras, modelCount) {
     const base = model.name.replace(/\.[^.]+$/, '').toLowerCase();
@@ -183,7 +209,7 @@ function startApp() {
     const file = csvs.find(f => f.name.toLowerCase().startsWith(base)) ?? (csvs.length === 1 && modelCount === 1 ? csvs[0] : null);
     if (!file) return;
     const { matched, total, values } = attachHeat(model, await file.text());
-    if (!matched) notify('warn', `${file.name} has ${values.toLocaleString()} values, which don't match the vertices of ${model.name}. The heat styles will measure against another loaded model or use vertex colours instead.`);
+    if (!matched) notify('warn', `${file.name} has ${values.toLocaleString()} values, which don't match the vertices of ${model.name}. The Deviation style will use other values or show height instead.`);
     else if (matched < total) notify('warn', `${file.name}: ${matched.toLocaleString()} of ${total.toLocaleString()} vertices got a value; the rest show as 0.`);
   }
 
@@ -270,8 +296,11 @@ function startApp() {
     clearNotices();
     try {
       const models = await loadShotModels(shot, '/models/', m => notify('warn', m));
-      stage.setModels(models);
-      setLook(shotLook(shot));
+      const old = stage.models;
+      stage.configure({ models, look: shotLook(shot) }); // built once, in one step
+      old.filter(m => !models.includes(m)).forEach(disposeModel);
+      resetCamera();
+      layoutFrame();
       stage.setTime(0);
       syncUi();
     } catch (err) {

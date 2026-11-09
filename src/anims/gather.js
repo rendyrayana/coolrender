@@ -6,6 +6,7 @@ export default {
   id: 'gather',
   label: 'Gather',
   maxModels: 4,
+  row: true,
   timed: true,
   forceStyle: 'points',
   layout(items) {

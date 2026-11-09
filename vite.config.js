@@ -21,7 +21,7 @@ function shotFiles() {
         if (url.startsWith('/models/')) {
           const root = path.resolve('models');
           const file = path.resolve(root, url.slice('/models/'.length));
-          if (!file.startsWith(root) || !fs.existsSync(file)) { res.statusCode = 404; return res.end(); }
+          if (!file.startsWith(root + path.sep) || !fs.existsSync(file)) { res.statusCode = 404; return res.end(); }
           return res.end(fs.readFileSync(file));
         }
         next();

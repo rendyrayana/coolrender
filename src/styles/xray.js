@@ -6,6 +6,8 @@ import { patchMaterial } from '../core/shaderPatch.js';
 export default {
   id: 'xray',
   label: 'X-ray',
+  needsMesh: true,
+  perPart: true,
   shadow: false,
   build(model) {
     const material = patchMaterial(new THREE.MeshBasicMaterial({ color: 0x9fc4ff, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide }), {

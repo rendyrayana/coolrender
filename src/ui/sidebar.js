@@ -1,6 +1,6 @@
 import { STYLES } from '../styles/index.js';
 import { ANIMS } from '../anims/index.js';
-import { BUILTIN_PRESETS, RESOLUTIONS, BACKGROUNDS, DEFAULT_LOOK, frameCount, outputSize } from '../core/look.js';
+import { BUILTIN_PRESETS, RESOLUTIONS, BACKGROUNDS, DEFAULT_LOOK, eventDefaults, frameCount, outputSize } from '../core/look.js';
 import { STYLE_GROUPS, STYLE_BLURBS, ANIM_GROUPS, ANIM_BLURBS } from './catalog.js';
 
 const THUMBS = `${import.meta.env.BASE_URL}thumbs/`;
@@ -192,7 +192,52 @@ export function createSidebar(root, actions) {
     h('div', { class: 'row' }, h('label', { text: 'Format' }), formatSeg),
     outputInfo);
 
-  scroll.append(shotsPanel, quickPanel, modelPanel, stylePanel, motionPanel, lookPanel, outputPanel);
+  // ── Options for the chosen motion and style ─────────────────────────────────
+  // Settings that only matter for some motions and styles. They are the same look keys a shot list uses.
+  const labelled = (label, control, title) => h('div', { class: 'row', title }, h('label', { text: label }), control);
+  const turnModeSeg = segmented([['full', 'Full turn'], ['swing', 'Swing']], v => actions.look({ turnMode: v }), 'Turn');
+  const turnRow = labelled('Turn', turnModeSeg, 'A full 360 degree turn, or a gentle swing from the front view');
+  const swingSlider = sliderRow({ label: 'Swing each way', min: 5, max: 90, step: 1, fmt: v => `${v}°`, title: 'How far the model turns to each side of the front', onChange: v => actions.look({ swing: v }) });
+  const rowSlider = sliderRow({ label: 'Row width', min: 0, max: 0.95, step: 0.05, fmt: v => (v ? pct(v) : 'Even'), title: 'Share of the frame width taken by a row of models. Even spaces them evenly.', onChange: v => actions.look({ fillWidth: v }) });
+  const explodeModeSeg = segmented([['layout', 'Layout'], ['radial', 'Radial'], ['lift', 'Lift']], v => actions.look({ explodeMode: v }), 'Explode mode');
+  const explodeModeRow = labelled('Explode', explodeModeSeg, 'Layout: your own exploded view from a layout file. Radial: away from the centre. Lift: the parts rise like a stack.');
+  const explodeHint = h('p', { class: 'hint' });
+
+  // Number boxes for a list of times (seconds). Empty boxes use the default shown as the placeholder.
+  function timeInputs(key, labels, defaultsOf) {
+    const inputs = labels.map((label, i) => h('input', { type: 'number', min: 0, step: 0.1, 'aria-label': label, title: label, onchange: () => {
+      const defaults = defaultsOf(last.look);
+      actions.look({ [key]: inputs.map((el, k) => (el.value === '' ? defaults[k] : Number(el.value))) });
+    } }));
+    const reset = h('button', { type: 'button', class: 'btn btn-small', text: 'Defaults', onclick: () => actions.look({ [key]: [] }) });
+    const row = h('div', { class: 'times' }, ...labels.map((label, i) => h('label', {}, h('span', { text: label }), inputs[i])), reset);
+    row.set = look => {
+      const defaults = defaultsOf(look);
+      inputs.forEach((el, i) => { el.placeholder = String(defaults[i]); el.value = look[key][i] ?? ''; });
+    };
+    return row;
+  }
+  const explodeTimes = timeInputs('motionEvents', ['Explode from', 'to', 'Back from', 'to'], look => eventDefaults(look).motion);
+
+  const heatScaleSeg = segmented([['fixed', 'Fixed'], ['auto', 'Auto']], v => actions.look({ heatScale: v }), 'Heat scale');
+  const heatPulseSeg = segmented([['sweep', 'Sweep'], ['ripple', 'Ripple'], ['none', 'None']], v => actions.look({ heatPulse: v }), 'Pulse');
+  const heatMin = h('input', { type: 'number', step: 0.5, 'aria-label': 'Darkest value', onchange: e => actions.look({ heatMin: Number(e.target.value) }) });
+  const heatMax = h('input', { type: 'number', step: 0.5, 'aria-label': 'Brightest value', onchange: e => actions.look({ heatMax: Number(e.target.value) }) });
+  const heatRange = labelled('Fixed range (mm)', h('span', { class: 'num pair' }, heatMin, ' to ', heatMax), 'Values at or below the first are darkest, at or above the second brightest. Only for stored millimetre values.');
+  const heatRefRow = toggleRow('Measure against the second model', v => actions.look({ heatReference: v }), 'Brings the first two loaded models into one frame and colours the first by its distance to the second');
+  const devTimes = timeInputs('styleEvents', ['Sweep from', 'to'], look => eventDefaults(look).deviation);
+  const ghostTimes = timeInputs('styleEvents', ['Ghost 1 at', 'Ghost 2 at'], look => eventDefaults(look).ghost);
+  const optionsBody = {
+    motion: [turnRow, swingSlider, rowSlider, explodeModeRow, explodeHint, explodeTimes],
+    deviation: [labelled('Scale', heatScaleSeg), heatRange, labelled('Pulse', heatPulseSeg), devTimes, heatRefRow],
+    ghost: [ghostTimes],
+  };
+  const optionsDetails = h('details', { class: 'more', open: true }, h('summary', { text: 'Options' }), ...Object.values(optionsBody).flat());
+  const optionsPanel = panel('Options', optionsDetails);
+  optionsPanel.querySelector('h2').remove();
+  optionsPanel.classList.add('panel-flush');
+
+  scroll.append(shotsPanel, quickPanel, modelPanel, stylePanel, motionPanel, optionsPanel, lookPanel, outputPanel);
 
   // ── Export bar ──────────────────────────────────────────────────────────────
   const exportButton = h('button', { type: 'button', class: 'btn btn-primary btn-wide', id: 'export', onclick: actions.export });
@@ -225,20 +270,63 @@ export function createSidebar(root, actions) {
     const home = STYLE_GROUPS.find(g => g.styles.includes(look.style));
     if (home && home.id !== tab && last.followStyle !== false) tab = home.id;
     drawTabs();
-    for (const [id, card] of cards) card.setAttribute('aria-pressed', String(id === look.style && !anim.forceStyle));
+    // A card that cannot work with the models or the chosen motion is dimmed, and says why.
+    const allPoints = models.length > 0 && models.every(m => m.isPointCloud);
+    for (const [id, card] of cards) {
+      const style = STYLES[id];
+      const reason = style.needsMesh && allPoints ? `${style.label} needs a mesh, and this model is a point cloud`
+        : anim.needsPerPart && !style.perPart ? `${anim.label} needs a style that draws one mesh per part`
+        : style.usesOtherModels?.(look) && models.length < 2 ? `${style.label} needs a second model to compare with` : '';
+      card.disabled = !!reason && id !== look.style;
+      card.classList.toggle('incompatible', !!reason);
+      card.title = reason || STYLE_BLURBS[id];
+      card.setAttribute('aria-pressed', String(id === look.style && !anim.forceStyle));
+    }
     grids.forEach(grid => grid.classList.toggle('dim', !!anim.forceStyle));
     styleNote.textContent = anim.forceStyle ? `${anim.label} always uses the ${STYLES[anim.forceStyle].label.toLowerCase()} style.` : '';
     styleNote.hidden = !anim.forceStyle;
 
+    const currentStyle = STYLES[look.style];
     for (const [id, chip] of chips) {
+      const motion = ANIMS[id];
+      const reason = models.length < (motion.minModels ?? 1) ? `${motion.label} needs ${motion.minModels} or more models`
+        : motion.needsPerPart && !motion.forceStyle && !currentStyle.perPart ? `${motion.label} needs a style that draws one mesh per part (${currentStyle.label} does not)`
+        : motion.needsPerPart && allPoints ? `${motion.label} needs a mesh, and this model is a point cloud` : '';
       chip.setAttribute('aria-pressed', String(id === look.anim));
-      chip.disabled = id === 'lineup' && models.length < 2;
-      if (id === 'lineup') chip.title = chip.disabled ? 'Load 2 or more models to make a lineup' : ANIM_BLURBS.lineup;
+      chip.disabled = !!reason && id !== look.anim;
+      chip.title = reason || ANIM_BLURBS[id];
     }
-    styleBSelect.value = look.styleB;
     styleBRow.hidden = anim.layers !== 2;
-    sameSizeRow.hidden = anim.maxModels < 2;
+    styleBSelect.value = look.styleB;
+    const shown = state.shownCount;
+    sameSizeRow.hidden = shown < 2;
     sameSizeRow.set(look.sameSize);
+
+    // Options that belong to the chosen motion or style.
+    const isTurn = look.anim === 'turn', isExplode = look.anim === 'explode';
+    turnRow.hidden = !isTurn;
+    turnModeSeg.set(look.turnMode);
+    swingSlider.hidden = !((isTurn && look.turnMode === 'swing') || isExplode);
+    swingSlider.set(look.swing);
+    rowSlider.hidden = !(anim.row && shown > 1);
+    rowSlider.set(look.fillWidth);
+    explodeModeRow.hidden = explodeHint.hidden = explodeTimes.hidden = !isExplode;
+    explodeModeSeg.set(look.explodeMode);
+    explodeHint.textContent = look.explodeMode === 'layout'
+      ? (state.hasLayout ? 'Using the loaded layout file.' : 'No layout file loaded: the parts explode away from the centre. Drop a .layout.json together with the model.')
+      : '';
+    explodeTimes.set(look);
+    const isDeviation = look.style === 'deviation' && !anim.forceStyle, isGhost = look.style === 'ghost_overlay' && !anim.forceStyle;
+    for (const el of optionsBody.deviation) el.hidden = !isDeviation;
+    for (const el of optionsBody.ghost) el.hidden = !isGhost;
+    heatScaleSeg.set(look.heatScale);
+    heatPulseSeg.set(look.heatPulse);
+    heatMin.value = look.heatMin;
+    heatMax.value = look.heatMax;
+    heatRefRow.set(look.heatReference);
+    devTimes.set(look);
+    ghostTimes.set(look);
+    optionsPanel.hidden = ![isTurn, isExplode, isDeviation, isGhost].some(Boolean);
     const timed = [look.style, anim.layers === 2 && look.styleB].some(id => STYLES[id]?.timed);
     animHint.textContent = [ANIM_BLURBS[look.anim], look.loop && (timed || anim.timed) ? 'This plays once over the shot, so with Loop on the last frame will not match the first.' : ''].filter(Boolean).join(' ');
 

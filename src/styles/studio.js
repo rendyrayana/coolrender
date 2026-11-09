@@ -5,6 +5,7 @@ import { pointsLike } from './shared.js';
 export default {
   id: 'studio',
   label: 'Studio',
+  perPart: true,
   build(model) {
     const group = new THREE.Group();
     for (const part of model.children) {

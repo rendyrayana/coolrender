@@ -8,6 +8,8 @@ import { patchMaterial } from '../core/shaderPatch.js';
 export default {
   id: 'anchor_glow',
   label: 'Anchor glow',
+  needsMesh: true,
+  perPart: true,
   build(model) {
     vertexScalar(model, { fallback: 'dark' });
     const uPulse = { value: 0 };

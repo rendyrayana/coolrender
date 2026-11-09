@@ -3,17 +3,21 @@ import * as THREE from 'three';
 // Splits a model into parts for explode / assembly animations.
 // 1. A model made of several meshes uses them as the parts.
 // 2. A single mesh is split into its connected pieces (loose parts of a scan).
-// 3. If that gives one piece, or hundreds of crumbs, it is cut into 8 blocks.
+// 3. If that gives one piece, hundreds of crumbs, or one piece that holds over 60%
+//    of the triangles, it is cut into 8 blocks.
 // Each part carries userData.center (its centre in model space).
 export function splitParts(model) {
   const cache = (model.userData.cache ??= {});
   if (cache.parts) return cache.parts;
   const meshes = model.children.filter(c => c.isMesh);
   let parts;
-  if (meshes.length > 1) parts = meshes.map(m => new THREE.Mesh(m.geometry, m.material));
+  if (meshes.length > 1) parts = meshes.map(m => Object.assign(new THREE.Mesh(m.geometry, m.material), { name: m.name }));
   else if (meshes.length === 1) {
     parts = byComponents(meshes[0]);
-    if (parts.length < 2 || parts.length > 64) parts = byOctants(meshes[0], model.userData.height);
+    // One piece, hundreds of crumbs, or one piece with a few specks: cut into blocks instead.
+    const total = parts.reduce((n, p) => n + (p.geometry.index?.count ?? p.geometry.attributes.position.count), 0);
+    const biggest = Math.max(0, ...parts.map(p => (p.geometry.index?.count ?? p.geometry.attributes.position.count) / total));
+    if (parts.length < 2 || parts.length > 64 || biggest > 0.6) parts = byOctants(meshes[0], model.userData.height);
   } else parts = [];
   for (const p of parts) {
     p.geometry.computeBoundingBox();

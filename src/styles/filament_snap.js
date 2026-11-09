@@ -9,6 +9,8 @@ const SWATCHES = 8;
 export default {
   id: 'filament_snap',
   label: 'Filament colours',
+  needsMesh: true,
+  perPart: true,
   timed: true, // plays once over the shot, so it can't loop seamlessly
   extent: 1.5, // props reach beyond the object
   build(model) {
@@ -41,6 +43,7 @@ export default {
       chips.add(chip);
     });
     group.add(chips);
+    group.userData.disposables = [paletteTex];
     group.userData.update = (t, look) => {
       const p = progress(t, look);
       uSnap.value = smooth(0.1, 0.35, p);

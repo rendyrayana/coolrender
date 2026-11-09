@@ -1,18 +1,18 @@
 {
-  "defaults": { "bg": "dark", "fps": 30, "resolution": "1080p" },
+  "defaults": { "bg": "dark", "fps": 30, "resolution": "1080p", "margin": 0.08, "key": 1.35, "rim": 1 },
   "shots": [
     { "id": "intro_loop", "models": ["carving1.glb", "carving2.glb", "carving3.glb", "carving4.glb"], "anim": "gather", "seconds": 20, "drift": 1, "shadow": false },
-    { "id": "ch2_methods", "models": ["asmat_sl.glb", "asmat_kinect.glb", "asmat_photo.glb"], "style": "studio", "anim": "lineup", "seconds": 6 },
+    { "id": "ch2_methods", "models": ["asmat_sl.glb", "asmat_kinect.glb", "asmat_photo.glb"], "style": "studio", "anim": "turn", "sameSize": true, "fillWidth": 0.85, "seconds": 6 },
     { "id": "ch2_photo_rig", "models": ["asmat_photo.glb"], "style": "photo_rig", "seconds": 6 },
-    { "id": "ch3_rescan", "models": ["barong_original.glb", "barong_rescan1.glb", "barong_rescan2.glb"], "style": "clay", "anim": "lineup", "seconds": 5 },
-    { "id": "ch3_heat", "models": ["barong_rescan1.glb"], "style": "heatmap", "heat": "barong_rescan1_hausdorff.csv", "seconds": 4 },
-    { "id": "ch3_heat_pulse", "models": ["barong_rescan1.glb", "barong_original.glb"], "style": "heat_pulse", "seconds": 4 },
-    { "id": "ch4_explode_1", "models": ["artifact1_parts.glb"], "style": "clay", "anim": "explode", "seconds": 3 },
-    { "id": "ch4_assembly", "models": ["artifact1_parts.glb"], "style": "studio", "anim": "hand_assembly", "seconds": 6 },
+    { "id": "ch3_ghost", "models": ["barong_raw.glb", "barong_rescan1.glb", "barong_rescan2.glb"], "style": "ghost_overlay", "turnMode": "swing", "seconds": 6 },
+    { "id": "ch3_deviation", "models": ["barong_rescan1.glb"], "style": "deviation", "turnMode": "swing", "heatMax": 4, "seconds": 6 },
+    { "id": "ch3_deviation_vs_raw", "models": ["barong_rescan1.glb", "barong_raw.glb"], "style": "deviation", "heatReference": true, "heatScale": "auto", "heatPulse": "ripple", "seconds": 6 },
+    { "id": "ch4_explode", "models": ["artifact1_parts.glb"], "style": "clay", "anim": "explode", "layout": "artifact1_parts.layout.json", "turnMode": "swing", "seconds": 7 },
+    { "id": "ch4_assembly", "models": ["artifact1_parts.glb"], "style": "studio", "anim": "explode", "explodeMode": "lift", "seconds": 6 },
     { "id": "ch5_morph", "models": ["daruma.glb"], "style": "studio", "styleB": "ps1", "anim": "morph", "seconds": 6 },
     { "id": "ch5_split", "models": ["daruma.glb", "daruma_ps1.glb"], "style": "studio", "styleB": "studio", "anim": "split_compare", "seconds": 6 },
-    { "id": "ch6_teapot", "models": ["teapot_scan.glb", "teapot_ps1.glb", "teapot_print.glb"], "style": "studio", "anim": "lineup", "seconds": 7 },
+    { "id": "ch6_teapot", "models": ["teapot_scan.glb", "teapot_ps1.glb", "teapot_print.glb"], "style": "studio", "anim": "turn", "sameSize": true, "fillWidth": 0.85, "seconds": 7 },
     { "id": "ch6_texels", "models": ["teapot_ps1.glb"], "style": "texel_step", "seconds": 4 },
-    { "id": "outro_lineup", "models": ["asmat_photo.glb", "barong_original.glb", "daruma.glb", "teapot_scan.glb"], "style": "mirror_floor", "anim": "lineup", "seconds": 5 }
+    { "id": "outro_row", "models": ["asmat_photo.glb", "barong_raw.glb", "daruma.glb", "teapot_scan.glb"], "style": "mirror_floor", "anim": "turn", "sameSize": true, "fillWidth": 0.85, "seconds": 5 }
   ]
 }

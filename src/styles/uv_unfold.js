@@ -7,6 +7,8 @@ import { patchMaterial } from '../core/shaderPatch.js';
 export default {
   id: 'uv_unfold',
   label: 'UV unfold',
+  needsMesh: true,
+  perPart: true,
   timed: true, // plays once over the shot, so it can't loop seamlessly
   build(model) {
     const h = model.userData.height;
