@@ -10,7 +10,7 @@
 
 coolrender turns 3D scans and models into clean video clips. It runs entirely in the browser on the user's machine, with no install, no account and no upload: drop in a model, pick a style, press Export. Every frame is rendered at an exact time, one after another, so a slow computer takes longer but never drops a frame. A batch renderer drives the same scene from a shot list, for many clips with one look.
 
-It was built for a PhD defense film on 3D-scanned cultural objects, and for designers, museum staff and researchers who need clear scan visuals without writing code.
+It was built for a presentation film on 3D-scanned cultural objects, and for designers, museum staff and researchers who need clear scan visuals without writing code.
 
 ![coolrender app](docs/app.png)
 
